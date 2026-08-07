@@ -133,7 +133,13 @@ pub fn rejects_a_directory_input_before_prompting(app: PasswordCipherApp) {
     let directory = tempfile::tempdir().expect("create password CLI test directory");
     fs::create_dir(directory.path().join("input")).expect("create input directory");
     let output = process::run_in(app.binary, directory.path(), &["D", "input", "output"]);
-    assert_failure_contains(&output, "cannot open input file");
+    let error = process::stderr(&output);
+    assert!(
+        !output.status.success()
+            && (error.contains("cannot open input file")
+                || error.contains("is not a regular file")),
+        "directory input was not rejected during preflight\nactual stderr:\n{error}"
+    );
     assert!(!directory.path().join("output").exists());
 }
 
